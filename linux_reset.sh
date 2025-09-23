@@ -33,22 +33,30 @@ XDG_STATE=${XDG_STATE_HOME:-$HOME/.local/state}
 
 # Clear configuration
 echo "🔑 Clearing configuration..."
+rm -rf "$XDG_CONFIG/warp-terminal" 2>/dev/null || true
+rm -rf "$XDG_CONFIG/warp-terminal-preview" 2>/dev/null || true
 rm -rf "$XDG_CONFIG/warp" 2>/dev/null || true
 rm -rf "$XDG_CONFIG/Warp" 2>/dev/null || true
 rm -rf "$HOME/.warp" 2>/dev/null || true
 
 # Clear application data
 echo "📁 Clearing application data..."
+rm -rf "$XDG_DATA/warp-terminal" 2>/dev/null || true
+rm -rf "$XDG_DATA/warp-terminal-preview" 2>/dev/null || true
 rm -rf "$XDG_DATA/warp" 2>/dev/null || true
 rm -rf "$XDG_DATA/Warp" 2>/dev/null || true
 
 # Clear cache
 echo "🧹 Clearing cache..."
+rm -rf "$XDG_CACHE/warp-terminal" 2>/dev/null || true
+rm -rf "$XDG_CACHE/warp-terminal-preview" 2>/dev/null || true
 rm -rf "$XDG_CACHE/warp" 2>/dev/null || true
 rm -rf "$XDG_CACHE/Warp" 2>/dev/null || true
 
 # Clear state and logs
 echo "📋 Clearing state and logs..."
+rm -rf "$XDG_STATE/warp-terminal" 2>/dev/null || true
+rm -rf "$XDG_STATE/warp-terminal-preview" 2>/dev/null || true
 rm -rf "$XDG_STATE/warp" 2>/dev/null || true
 
 # Clear temporary/runtime files
@@ -59,8 +67,14 @@ rm -rf /run/user/$(id -u)/warp 2>/dev/null || true
 # Verify Warp is still installed
 echo ""
 echo "🔍 Verifying Warp installation..."
-if command -v warp &> /dev/null; then
+if command -v warp-terminal &> /dev/null; then
+    echo "✅ Warp Terminal binary found at: $(which warp-terminal)"
+elif command -v warp &> /dev/null; then
     echo "✅ Warp binary found at: $(which warp)"
+elif [ -f "/usr/bin/warp-terminal" ]; then
+    echo "✅ Warp Terminal found at: /usr/bin/warp-terminal"
+elif [ -d "/opt/warpdotdev" ]; then
+    echo "✅ Warp found at: /opt/warpdotdev"
 elif [ -d "/opt/Warp" ]; then
     echo "✅ Warp found at: /opt/Warp"
 elif [ -f "/usr/local/bin/warp" ]; then
