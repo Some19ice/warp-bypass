@@ -118,30 +118,30 @@ chmod +x linux_reset.sh linux_remove.sh
 
 **🔄 linux_reset.sh (Identity Reset)**
 - Kills Warp processes
-- Clears `~/.config/warp` (configuration)
-- Clears `~/.local/share/warp` (application data)
-- Clears `~/.cache/warp` (cache files)
-- Clears `~/.local/state/warp` (state/logs)
+- Clears `~/.config/warp-terminal` (configuration)
+- Clears `~/.local/share/warp-terminal` (application data)
+- Clears `~/.cache/warp-terminal` (cache files)
+- Clears `~/.local/state/warp-terminal` (state/logs)
 - Removes temporary files in `/tmp` and `/run/user`
 - Verifies Warp is still installed
 
 **🗑️ linux_remove.sh (Complete Removal)**
 - Everything from identity reset PLUS:
-- Removes Warp from `/opt/Warp`, `/usr/local/bin`, `/usr/bin`
+- Removes Warp from `/usr/bin/warp-terminal`, `/opt/warpdotdev`, `/opt/Warp`
 - Removes desktop entries
-- Checks for package manager installations (Snap, Flatpak, APT, DNF/YUM)
+- Checks for package manager installations (Snap, Flatpak, APT, DNF/YUM, Zypper, Pacman)
 - Verifies complete removal
 
 ### Linux File Locations
 
 | Type | Location | Description |
 |------|----------|-------------|
-| **Config** | `~/.config/warp` | User preferences and settings |
-| **Data** | `~/.local/share/warp` | Application data |
-| **Cache** | `~/.cache/warp` | Temporary cache files |
-| **State** | `~/.local/state/warp` | Runtime state and logs |
-| **Binary** | `/opt/Warp` or `/usr/local/bin/warp` | Application installation |
-| **Desktop** | `~/.local/share/applications/warp.desktop` | Desktop entry |
+| **Config** | `~/.config/warp-terminal` | User preferences and settings |
+| **Data** | `~/.local/share/warp-terminal` | Application data |
+| **Cache** | `~/.cache/warp-terminal` | Temporary cache files |
+| **State** | `~/.local/state/warp-terminal` | Runtime state and logs |
+| **Binary** | `/usr/bin/warp-terminal` or `/opt/warpdotdev` | Application installation |
+| **Desktop** | `~/.local/share/applications/warp-terminal.desktop` | Desktop entry |
 
 ## 📚 How It Works
 
@@ -193,8 +193,10 @@ chmod +x linux_reset.sh linux_remove.sh
 - If Warp was installed via package manager, uninstall with:
   - Snap: `sudo snap remove warp`
   - Flatpak: `flatpak uninstall dev.warp.Warp`
-  - APT: `sudo apt remove warp`
-  - DNF/YUM: `sudo dnf/yum remove warp`
+  - APT: `sudo apt remove warp-terminal`
+  - DNF/YUM: `sudo dnf remove warp-terminal` or `sudo yum remove warp-terminal`
+  - Zypper: `sudo zypper remove warp-terminal`
+  - Pacman: `sudo pacman -R warp-terminal`
 
 ## 📈 Repository Stats
 
