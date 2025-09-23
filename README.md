@@ -15,6 +15,8 @@
 
 **Cross-platform Python tools for Warp terminal: Reset machine identity OR completely remove the app**
 
+**Created by [Munir](https://munir-dev-portfolio-2024.netlify.app/) | [🌐 Portfolio](https://munir-dev-portfolio-2024.netlify.app/) | [💼 GitHub](https://github.com/black12-ag)**
+
 </div>
 
 ---
@@ -208,6 +210,14 @@ chmod +x linux_reset.sh linux_remove.sh
 
 </div>
 
+## 👨‍💻 Author
+
+**Munir** - Full Stack Developer
+
+- 🌐 Portfolio: [https://munir-dev-portfolio-2024.netlify.app/](https://munir-dev-portfolio-2024.netlify.app/)
+- 💼 GitHub: [@black12-ag](https://github.com/black12-ag)
+- 📧 Contact: Via portfolio website
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
@@ -216,10 +226,15 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 If this tool helped you, please give it a ⭐!
 
+For issues or questions:
+- 🐛 [Open an issue](https://github.com/black12-ag/warp-bypass/issues)
+- 💡 [Start a discussion](https://github.com/black12-ag/warp-bypass/discussions)
+- 🌐 [Visit my portfolio](https://munir-dev-portfolio-2024.netlify.app/)
+
 ---
 
 <div align="center">
 
-**Made with ❤️ for the developer community**
+**Made with ❤️ by [Munir](https://munir-dev-portfolio-2024.netlify.app/) for the developer community**
 
 </div>
