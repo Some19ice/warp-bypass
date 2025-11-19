@@ -63,11 +63,26 @@ class WarpRemover:
     def safe_remove(self, path_pattern):
         """Safely remove files/directories matching pattern"""
         if isinstance(path_pattern, str):
-            paths = glob.glob(path_pattern)
+            try:
+                paths = glob.glob(path_pattern)
+            except Exception as e:
+                self.print_emoji("⚠️", f"Error during glob operation for {path_pattern}: {e}")
+                return
         else:
             paths = [str(path_pattern)] if path_pattern.exists() else []
             
         for path in paths:
+            # Safety check: Don't delete the script's own directory or current working directory
+            try:
+                path_obj = Path(path).resolve()
+                cwd = Path.cwd().resolve()
+                script_dir = Path(__file__).parent.resolve()
+                if path_obj == cwd or path_obj == script_dir or cwd.is_relative_to(path_obj) or script_dir.is_relative_to(path_obj):
+                    self.print_emoji("🛡️", f"Skipping project/script directory: {path}")
+                    continue
+            except Exception:
+                pass
+
             try:
                 if os.path.isdir(path):
                     shutil.rmtree(path)
@@ -76,8 +91,12 @@ class WarpRemover:
                     os.remove(path)
                     self.print_emoji("📄", f"Removed file: {path}")
                 self.removed_count += 1
-            except (OSError, PermissionError) as e:
-                self.print_emoji("⚠️", f"Couldn't remove {path}: {e}")
+            except PermissionError:
+                self.print_emoji("❌", f"Permission denied to remove {path}. Try running as administrator.")
+            except FileNotFoundError:
+                self.print_emoji("🤷", f"File not found to remove: {path}")
+            except OSError as e:
+                self.print_emoji("⚠️", f"Could not remove {path}: {e}")
                 
     def kill_warp_processes(self):
         """Kill all Warp processes (cross-platform)"""
@@ -141,7 +160,36 @@ class WarpRemover:
         # Downloads
         self.safe_remove(str(self.home / "Downloads/*warp*"))
         self.safe_remove(str(self.home / "Downloads/*Warp*"))
+
+        # Group Containers
+        self.safe_remove(str(self.home / "Library/Group Containers/*warp*"))
+        self.safe_remove(str(self.home / "Library/Group Containers/*Warp*"))
+        self.safe_remove(str(self.home / "Library/Group Containers/2BBY89MBSN.dev.warp"))
+
+        # Application Scripts
+        self.safe_remove(str(self.home / "Library/Application Scripts/*warp*"))
+        self.safe_remove(str(self.home / "Library/Application Scripts/*Warp*"))
+        self.safe_remove(str(self.home / "Library/Application Scripts/2BBY89MBSN.dev.warp"))
+
+        # Comet Browser/App Data (Warp related)
+        self.print_emoji("🌐", "Removing Warp data from Comet browser/app...")
+        self.safe_remove(str(self.home / "Library/Application Support/Comet/*/IndexedDB/https_app.warp.dev*"))
+        self.safe_remove(str(self.home / "Library/Application Support/Comet/*/Extensions/*warp*"))
+        # Specific Warp extension ID in Comet
+        self.safe_remove(str(self.home / "Library/Application Support/Comet/*/Extensions/mjdcklhepheaaemphcopihnmjlmjpcnh"))
+        # Specific extension ID found in logs if it contains warp assets
+        # We'll be careful and only remove if path contains warp, which the glob above covers if the extension folder itself doesn't say warp but contents do. 
+        # But safe_remove with glob only matches the path string.
+        # The log showed: .../Extensions/mjdcklhepheaaemphcopihnmjlmjpcnh/.../warpscript...
+        # We can't easily glob inside the extension content with safe_remove's current logic unless we walk.
+        # But we can try to remove the specific IndexedDB which is the main data.
         
+        # Clear Launch Services database
+        
+        # Sentry Crash Reports
+        self.safe_remove(str(self.home / "Library/Caches/SentryCrash/Warp"))
+        self.safe_remove(str(self.home / "Library/Caches/SentryCrash/dev.warp.Warp-Stable"))
+
         # Clear Launch Services database
         self.print_emoji("📊", "Clearing Launch Services database...")
         try:
@@ -221,28 +269,25 @@ class WarpRemover:
         self.print_emoji("🗑️", "Removing main application...")
         self.safe_remove(program_files / "Warp")
         self.safe_remove(program_files_x86 / "Warp")
-        
+        self.safe_remove(local_appdata / "Warp")
+
         # User data and configuration
         self.print_emoji("📁", "Removing user data and configuration...")
-        
-        # AppData Local
-        self.safe_remove(str(local_appdata / "*warp*"))
-        self.safe_remove(str(local_appdata / "*Warp*"))
-        
-        # AppData Roaming
-        self.safe_remove(str(appdata / "*warp*"))
-        self.safe_remove(str(appdata / "*Warp*"))
-        
+        self.safe_remove(str(local_appdata / 'dev.warp.Warp-stable'))
+        self.safe_remove(str(appdata / 'dev.warp.Warp-stable'))
+        self.safe_remove(str(local_appdata / 'Warp'))
+        self.safe_remove(str(appdata / 'Warp'))
+
         # Temp files
+        self.print_emoji("🧹", "Clearing temporary files...")
         temp_dir = Path(os.environ.get('TEMP', 'C:/Windows/Temp'))
-        self.safe_remove(str(temp_dir / "*warp*"))
-        self.safe_remove(str(temp_dir / "*Warp*"))
-        
-        # Downloads
-        downloads_dir = self.home / "Downloads"
-        self.safe_remove(str(downloads_dir / "*warp*"))
-        self.safe_remove(str(downloads_dir / "*Warp*"))
-        
+        self.safe_remove(str(temp_dir / "*WarpSetup.exe"), "temp files")
+
+        # Start Menu link
+        self.print_emoji("🔗", "Removing Start Menu link...")
+        start_menu = Path(os.environ.get('APPDATA', str(self.home / 'AppData/Roaming'))) / "Microsoft/Windows/Start Menu/Programs"
+        self.safe_remove(str(start_menu / "Warp.lnk"))
+
         # Registry cleanup (requires admin privileges)
         self.print_emoji("📊", "Attempting registry cleanup...")
         try:
@@ -251,15 +296,22 @@ class WarpRemover:
             registry_paths = [
                 (winreg.HKEY_CURRENT_USER, "Software\\Warp"),
                 (winreg.HKEY_LOCAL_MACHINE, "Software\\Warp"),
+                (winreg.HKEY_CURRENT_USER, "Software\\dev.warp.Warp-stable"),
+                (winreg.HKEY_LOCAL_MACHINE, "Software\\dev.warp.Warp-stable"),
                 (winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Warp"),
+                (winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Warp"),
             ]
             
             for root, subkey in registry_paths:
                 try:
                     winreg.DeleteKeyEx(root, subkey)
                     self.print_emoji("🔑", f"Removed registry key: {subkey}")
-                except WindowsError:
-                    pass  # Key doesn't exist or no permission
+                except FileNotFoundError:
+                    self.print_emoji("🤷", f"Registry key not found, skipping: {subkey}")
+                except PermissionError:
+                    self.print_emoji("❌", f"Permission denied to delete registry key: {subkey}")
+                except OSError as e:
+                    self.print_emoji("⚠️", f"Error deleting registry key {subkey}: {e}")
                     
         except ImportError:
             self.print_emoji("⚠️", "Registry cleanup requires Windows")
@@ -304,20 +356,37 @@ class WarpRemover:
                 try:
                     for root, dirs, files in os.walk(search_path):
                         for item in dirs + files:
-                            if 'warp' in item.lower():
-                                remaining_items += 1
-                                self.print_emoji("👀", f"Found: {os.path.join(root, item)}")
+                            path_parts = Path(root).parts + (item,)
+                            if any('warp' in part.lower() for part in path_parts):
+                                full_path = os.path.join(root, item)
+                                # Exclude common false positives
+                                if not any(fp in full_path.lower() for fp in ['skimage', 'python', 'hp', 'google', 'chrome', 'skwarpgeometry', 'prism-warpscript', 'warp-bypass', 'libdisplaywarpsupport', 'glutwarppointer']):
+                                    remaining_items += 1
+                                    self.print_emoji("👀", f"Found: {full_path}")
                 except (PermissionError, OSError):
                     pass  # Skip inaccessible directories
                     
         return remaining_items
         
+    def is_admin(self):
+        """Check for admin privileges"""
+        try:
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
+
     def run(self):
         """Main removal process"""
         print("=" * 60)
         self.print_emoji("🚀", "Starting Complete Warp Removal...")
         self.print_emoji("💻", f"Detected system: {self.system}")
         print("=" * 60)
+
+        if self.system == "Windows" and not self.is_admin():
+            self.print_emoji("❌", "This tool requires administrator privileges on Windows.")
+            self.print_emoji("💡", "Please re-run this script from a Command Prompt or PowerShell with 'Run as Administrator'.")
+            return False
         
         # Step 1: Kill processes
         self.kill_warp_processes()

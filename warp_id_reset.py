@@ -64,11 +64,26 @@ class WarpIdentityReset:
     def safe_remove(self, path_pattern, description=""):
         """Safely remove files/directories matching pattern"""
         if isinstance(path_pattern, str):
-            paths = glob.glob(path_pattern)
+            try:
+                paths = glob.glob(path_pattern)
+            except Exception as e:
+                self.print_emoji("⚠️", f"Error during glob operation for {path_pattern}: {e}")
+                return
         else:
             paths = [str(path_pattern)] if path_pattern.exists() else []
             
         for path in paths:
+            # Safety check: Don't delete the script's own directory or current working directory
+            try:
+                path_obj = Path(path).resolve()
+                cwd = Path.cwd().resolve()
+                script_dir = Path(__file__).parent.resolve()
+                if path_obj == cwd or path_obj == script_dir or cwd.is_relative_to(path_obj) or script_dir.is_relative_to(path_obj):
+                    self.print_emoji("🛡️", f"Skipping project/script directory: {path}")
+                    continue
+            except Exception:
+                pass
+
             try:
                 if os.path.isdir(path):
                     shutil.rmtree(path)
@@ -77,8 +92,12 @@ class WarpIdentityReset:
                     os.remove(path)
                     self.print_emoji("📄", f"Reset {description}: {os.path.basename(path)}")
                 self.reset_count += 1
-            except (OSError, PermissionError) as e:
-                self.print_emoji("⚠️", f"Couldn't reset {path}: {e}")
+            except PermissionError:
+                self.print_emoji("❌", f"Permission denied to remove {path}. Try running as administrator.")
+            except FileNotFoundError:
+                self.print_emoji("🤷", f"File not found to remove: {path}")
+            except OSError as e:
+                self.print_emoji("⚠️", f"Could not remove {path}: {e}")
                 
     def kill_warp_processes(self):
         """Kill all Warp processes to ensure clean reset"""
@@ -143,6 +162,27 @@ class WarpIdentityReset:
         self.safe_remove(str(self.home / "Library/HTTPStorages/*warp*"), "HTTP storage")
         self.safe_remove(str(self.home / "Library/HTTPStorages/*Warp*"), "HTTP storage")
         
+        # Group Containers - shared data
+        self.print_emoji("📦", "Clearing group containers...")
+        self.safe_remove(str(self.home / "Library/Group Containers/*warp*"), "group containers")
+        self.safe_remove(str(self.home / "Library/Group Containers/*Warp*"), "group containers")
+        self.safe_remove(str(self.home / "Library/Group Containers/2BBY89MBSN.dev.warp"), "group containers")
+
+        # Application Scripts
+        self.safe_remove(str(self.home / "Library/Application Scripts/*warp*"), "app scripts")
+        self.safe_remove(str(self.home / "Library/Application Scripts/*Warp*"), "app scripts")
+        self.safe_remove(str(self.home / "Library/Application Scripts/2BBY89MBSN.dev.warp"), "app scripts")
+
+        # Comet Browser/App Data (Warp related)
+        self.print_emoji("🌐", "Clearing Comet browser data...")
+        self.safe_remove(str(self.home / "Library/Application Support/Comet/*/IndexedDB/https_app.warp.dev*"), "Comet DB")
+        self.safe_remove(str(self.home / "Library/Application Support/Comet/*/Extensions/*warp*"), "Comet Ext")
+        self.safe_remove(str(self.home / "Library/Application Support/Comet/*/Extensions/mjdcklhepheaaemphcopihnmjlmjpcnh"), "Comet Warp Ext")
+
+        # Sentry Crash Reports
+        self.safe_remove(str(self.home / "Library/Caches/SentryCrash/Warp"), "crash reports")
+        self.safe_remove(str(self.home / "Library/Caches/SentryCrash/dev.warp.Warp-Stable"), "crash reports")
+        
         # Clear Launch Services database (helps reset file associations)
         self.print_emoji("📊", "Updating system database...")
         try:
@@ -201,29 +241,26 @@ class WarpIdentityReset:
         """Reset Warp identity on Windows - keeps app installed"""
         self.print_emoji("🪟", "Resetting Warp identity on Windows...")
         
-        # Note: We DON'T remove Program Files installation - that stays!
-        
         local_appdata = Path(os.environ.get('LOCALAPPDATA', str(self.home / 'AppData/Local')))
         appdata = Path(os.environ.get('APPDATA', str(self.home / 'AppData/Roaming')))
         
         # User identity and session data
         self.print_emoji("🔑", "Clearing user identity data...")
-        
-        # AppData Local - user data, settings, machine ID
-        self.safe_remove(str(local_appdata / "*warp*"), "user data")
-        self.safe_remove(str(local_appdata / "*Warp*"), "user data")
-        
-        # AppData Roaming - roaming user settings
-        self.print_emoji("⚙️", "Clearing roaming preferences...")
-        self.safe_remove(str(appdata / "*warp*"), "preferences")
-        self.safe_remove(str(appdata / "*Warp*"), "preferences")
-        
-        # Temp files - temporary files that might contain machine info
+        self.safe_remove(str(local_appdata / 'dev.warp.Warp-stable'), "user data")
+        self.safe_remove(str(appdata / 'dev.warp.Warp-stable'), "user data")
+        self.safe_remove(str(local_appdata / 'Warp'), "user data")
+        self.safe_remove(str(appdata / 'Warp'), "user data")
+
+        # Temp files
         self.print_emoji("🧹", "Clearing temporary files...")
         temp_dir = Path(os.environ.get('TEMP', 'C:/Windows/Temp'))
-        self.safe_remove(str(temp_dir / "*warp*"), "temp files")
-        self.safe_remove(str(temp_dir / "*Warp*"), "temp files")
-        
+        self.safe_remove(str(temp_dir / "*WarpSetup.exe"), "temp files")
+
+        # Start Menu link
+        self.print_emoji("🔗", "Removing Start Menu link...")
+        start_menu = Path(os.environ.get('APPDATA', str(self.home / 'AppData/Roaming'))) / "Microsoft/Windows/Start Menu/Programs"
+        self.safe_remove(str(start_menu / "Warp.lnk"))
+
         # Registry cleanup - remove machine-specific registry entries
         self.print_emoji("📊", "Resetting registry entries...")
         try:
@@ -231,15 +268,19 @@ class WarpIdentityReset:
             # Clean up user-specific registry locations (not system-wide)
             registry_paths = [
                 (winreg.HKEY_CURRENT_USER, "Software\\Warp"),
-                # Note: We don't touch HKEY_LOCAL_MACHINE to preserve installation
+                (winreg.HKEY_CURRENT_USER, "Software\\dev.warp.Warp-stable"),
             ]
             
             for root, subkey in registry_paths:
                 try:
                     winreg.DeleteKeyEx(root, subkey)
                     self.print_emoji("🔑", f"Reset registry: {subkey}")
-                except WindowsError:
-                    pass  # Key doesn't exist or no permission
+                except FileNotFoundError:
+                    self.print_emoji("🤷", f"Registry key not found, skipping: {subkey}")
+                except PermissionError:
+                    self.print_emoji("❌", f"Permission denied to delete registry key: {subkey}")
+                except OSError as e:
+                    self.print_emoji("⚠️", f"Error deleting registry key {subkey}: {e}")
                     
         except ImportError:
             self.print_emoji("⚠️", "Registry reset requires Windows")
@@ -254,6 +295,7 @@ class WarpIdentityReset:
         
         if self.system == "Darwin":  # macOS
             app_path = "/Applications/Warp.app"
+            self.print_emoji("ℹ️", f"Checking for Warp at: {app_path}")
             app_exists = os.path.exists(app_path)
             if app_exists:
                 self.print_emoji("✅", f"Warp app still installed: {app_path}")
@@ -264,13 +306,16 @@ class WarpIdentityReset:
             # Check common Windows installation paths
             program_files = Path(os.environ.get('PROGRAMFILES', 'C:/Program Files'))
             program_files_x86 = Path(os.environ.get('PROGRAMFILES(X86)', 'C:/Program Files (x86)'))
-            
+            local_appdata = Path(os.environ.get('LOCALAPPDATA', str(self.home / 'AppData/Local')))
+
             possible_paths = [
-                program_files / "Warp",
-                program_files_x86 / "Warp",
+                program_files / "Warp/Warp.exe",
+                program_files_x86 / "Warp/Warp.exe",
+                local_appdata / "Warp/Warp.exe",
             ]
             
             for path in possible_paths:
+                self.print_emoji("ℹ️", f"Checking for Warp at: {path}")
                 if path.exists():
                     app_exists = True
                     self.print_emoji("✅", f"Warp app still installed: {path}")
@@ -301,6 +346,14 @@ class WarpIdentityReset:
                 
         return app_exists
         
+    def is_admin(self):
+        """Check for admin privileges"""
+        try:
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
+
     def run(self):
         """Main identity reset process"""
         print("=" * 70)
@@ -308,6 +361,11 @@ class WarpIdentityReset:
         self.print_emoji("💻", f"Detected system: {self.system}")
         self.print_emoji("🎯", "App will remain installed - only identity data will be reset")
         print("=" * 70)
+
+        if self.system == "Windows" and not self.is_admin():
+            self.print_emoji("❌", "This tool requires administrator privileges on Windows.")
+            self.print_emoji("💡", "Please re-run this script from a Command Prompt or PowerShell with 'Run as Administrator'.")
+            return False
         
         # Step 1: Stop processes
         self.kill_warp_processes()

@@ -8,6 +8,10 @@
 [![Repository Views](https://komarev.com/ghpvc/?username=black12-ag&repository=warp-bypass&color=brightgreen&style=for-the-badge&label=VIEWS)](https://github.com/black12-ag/warp-bypass)
 ![GitHub downloads](https://img.shields.io/github/downloads/black12-ag/warp-bypass/total?style=for-the-badge&logo=github&color=brightgreen)
 
+<!-- About & Sponsor -->
+[![Developer](https://img.shields.io/badge/Developer-Munir%20Ayub-red?style=for-the-badge&logo=github)](https://github.com/black12-ag)
+[![Sponsor](https://img.shields.io/badge/Sponsor-💖-pink?style=for-the-badge)](https://github.com/sponsors/black12-ag)
+
 <!-- Platform Support -->
 ![Python](https://img.shields.io/badge/python-3.6+-blue.svg?style=for-the-badge&logo=python)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-green.svg?style=for-the-badge)
@@ -77,6 +81,8 @@ python3 warp_remover.py    # macOS/Linux
 python warp_remover.py     # Windows
 ```
 
+
+
 ## 🐧 Linux Users - Standalone Scripts
 
 ### Quick One-Liner Commands
@@ -144,6 +150,13 @@ chmod +x linux_reset.sh linux_remove.sh
 | **State** | `~/.local/state/warp-terminal` | Runtime state and logs |
 | **Binary** | `/usr/bin/warp-terminal` or `/opt/warpdotdev` | Application installation |
 | **Desktop** | `~/.local/share/applications/warp-terminal.desktop` | Desktop entry |
+
+## 🪟 Windows Users - No Python? No Problem!
+
+**[📥 Download windows_remove.bat](https://github.com/black12-ag/warp-bypass/raw/main/windows_remove.bat)**
+
+Simply download the script above, right-click, and select **"Run as Administrator"**. 
+It will clean everything (including browser data) without needing Python!
 
 ## 📚 How It Works
 
